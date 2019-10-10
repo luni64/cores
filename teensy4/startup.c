@@ -35,6 +35,10 @@ uint32_t set_arm_clock(uint32_t frequency); // clockspeed.c
 extern void __libc_init_array(void); // C++ standard library
 
 
+void startup_default_early_hook(void) {}
+void startup_early_hook(void)		__attribute__ ((weak, alias("startup_default_early_hook")));
+void startup_default_late_hook(void) {}
+void startup_late_hook(void)		__attribute__ ((weak, alias("startup_default_late_hook")));
 __attribute__((section(".startup"), optimize("no-tree-loop-distribute-patterns"), naked))
 void ResetHandler(void)
 {
@@ -83,14 +87,6 @@ void ResetHandler(void)
 	IOMUXC_GPR_GPR29 = 0xFFFFFFFF;
 #endif
 
-	// Undo PIT timer usage by ROM startup
-	CCM_CCGR1 |= CCM_CCGR1_PIT(CCM_CCGR_ON);
-	PIT_MCR = 0;
-	PIT_TCTRL0 = 0;
-	PIT_TCTRL1 = 0;
-	PIT_TCTRL2 = 0;
-	PIT_TCTRL3 = 0;
-
 	// must enable PRINT_DEBUG_STUFF in debug/print.h
 	printf_debug_init();
 	printf("\n***********IMXRT Startup**********\n");
@@ -100,11 +96,19 @@ void ResetHandler(void)
 	configure_systick();
 	usb_pll_start();	
 	reset_PFD(); //TODO: is this really needed?
-	
-	set_arm_clock(600000000);
-	//set_arm_clock(984000000); Ludicrous Speed
+#ifdef F_CPU
+	set_arm_clock(F_CPU);
+#endif
 
 	asm volatile("nop\n nop\n nop\n nop": : :"memory"); // why oh why?
+
+	// Undo PIT timer usage by ROM startup
+	CCM_CCGR1 |= CCM_CCGR1_PIT(CCM_CCGR_ON);
+	PIT_MCR = 0;
+	PIT_TCTRL0 = 0;
+	PIT_TCTRL1 = 0;
+	PIT_TCTRL2 = 0;
+	PIT_TCTRL3 = 0;
 
 	// initialize RTC
 	if (!(SNVS_LPCR & SNVS_LPCR_SRTC_ENV)) {
@@ -115,12 +119,14 @@ void ResetHandler(void)
 	}
 	SNVS_HPCR |= SNVS_HPCR_RTC_EN | SNVS_HPCR_HP_TS;
 
+	startup_early_hook();
 	while (millis() < 20) ; // wait at least 20ms before starting USB
 	usb_init();
 	analog_init();
 	pwm_init();
 	tempmon_init();
 
+	startup_late_hook();
 	while (millis() < 300) ; // wait at least 300ms before calling user code
 	//printf("before C++ constructors\n");
 	__libc_init_array();
