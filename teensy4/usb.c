@@ -2,6 +2,12 @@
 #define USB_DESC_LIST_DEFINE
 #include "usb_desc.h"
 #include "usb_serial.h"
+#include "usb_seremu.h"
+#include "usb_keyboard.h"
+#include "usb_mouse.h"
+#include "usb_joystick.h"
+#include "usb_touch.h"
+#include "usb_midi.h"
 #include "core_pins.h" // for delay()
 #include "avr/pgmspace.h"
 #include <string.h>
@@ -79,6 +85,7 @@ static uint32_t endpointN_notify_mask=0;
 volatile uint8_t usb_configuration = 0; // non-zero when USB host as configured device
 volatile uint8_t usb_high_speed = 0;    // non-zero if running at 480 Mbit/sec speed
 static uint8_t endpoint0_buffer[8];
+static uint8_t sof_usage = 0;
 static uint8_t usb_reboot_timer = 0;
 
 extern uint8_t usb_descriptor_buffer[]; // defined in usb_desc.c
@@ -294,17 +301,44 @@ static void isr(void)
 		//printf("error\n");
 	}
 	if ((USB1_USBINTR & USB_USBINTR_SRE) && (status & USB_USBSTS_SRI)) {
-		printf("sof %d\n", usb_reboot_timer);
+		//printf("sof %d\n", usb_reboot_timer);
 		if (usb_reboot_timer) {
 			if (--usb_reboot_timer == 0) {
+				usb_stop_sof_interrupts(NUM_INTERFACE);
 				asm("bkpt #251"); // run bootloader
 			}
-		} else {
-			// turn off the SOF interrupt if nothing using it
-			USB1_USBINTR &= ~USB_USBINTR_SRE;
 		}
+		#ifdef MIDI_INTERFACE
+		usb_midi_flush_output();
+		#endif
+		#ifdef MULTITOUCH_INTERFACE
+		usb_touchscreen_update_callback();
+		#endif
 	}
 }
+
+
+void usb_start_sof_interrupts(int interface)
+{
+	__disable_irq();
+	sof_usage |= (1 << interface);
+	uint32_t intr = USB1_USBINTR;
+	if (!(intr & USB_USBINTR_SRE)) {
+		USB1_USBSTS = USB_USBSTS_SRI; // clear prior SOF before SOF IRQ enable
+		USB1_USBINTR = intr | USB_USBINTR_SRE;
+	}
+	__enable_irq();
+}
+
+void usb_stop_sof_interrupts(int interface)
+{
+	sof_usage &= ~(1 << interface);
+	if (sof_usage == 0) {
+		USB1_USBINTR &= ~USB_USBINTR_SRE;
+	}
+}
+
+
 
 
 /*
@@ -359,9 +393,26 @@ static void endpoint0_setup(uint64_t setupdata)
 		#endif
 		#if defined(CDC_STATUS_INTERFACE) && defined(CDC_DATA_INTERFACE)
 		usb_serial_configure();
+		#elif defined(SEREMU_INTERFACE)
+		usb_seremu_configure();
 		#endif
 		#if defined(RAWHID_INTERFACE)
 		usb_rawhid_configure();
+		#endif
+		#if defined(KEYBOARD_INTERFACE)
+		usb_keyboard_configure();
+		#endif
+		#if defined(MOUSE_INTERFACE)
+		usb_mouse_configure();
+		#endif
+		#if defined(JOYSTICK_INTERFACE)
+		usb_joystick_configure();
+		#endif
+		#if defined(MULTITOUCH_INTERFACE)
+		usb_touchscreen_configure();
+		#endif
+		#if defined(MIDI_INTERFACE)
+		usb_midi_configure();
 		#endif
 		endpoint0_receive(NULL, 0, 0);
 		return;
@@ -564,7 +615,7 @@ static void endpoint0_complete(void)
 		memcpy(usb_cdc_line_coding, endpoint0_buffer, 7);
 		printf("usb_cdc_line_coding, baud=%u\n", usb_cdc_line_coding[0]);
 		if (usb_cdc_line_coding[0] == 134) {
-			USB1_USBINTR |= USB_USBINTR_SRE;
+			usb_start_sof_interrupts(NUM_INTERFACE);
 			usb_reboot_timer = 80; // TODO: 10 if only 12 Mbit/sec
 		}
 	}
@@ -574,7 +625,7 @@ static void endpoint0_complete(void)
 	  && endpoint0_buffer[0] == 0xA9 && endpoint0_buffer[1] == 0x45
 	  && endpoint0_buffer[2] == 0xC2 && endpoint0_buffer[3] == 0x6B) {
 		printf("seremu reboot request\n");
-		USB1_USBINTR |= USB_USBINTR_SRE;
+		usb_start_sof_interrupts(NUM_INTERFACE);
 		usb_reboot_timer = 80; // TODO: 10 if only 12 Mbit/sec
 	}
 #endif
