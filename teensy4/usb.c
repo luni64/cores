@@ -6,8 +6,10 @@
 #include "usb_keyboard.h"
 #include "usb_mouse.h"
 #include "usb_joystick.h"
+#include "usb_flightsim.h"
 #include "usb_touch.h"
 #include "usb_midi.h"
+#include "usb_audio.h"
 #include "core_pins.h" // for delay()
 #include "avr/pgmspace.h"
 #include <string.h>
@@ -314,6 +316,9 @@ static void isr(void)
 		#ifdef MULTITOUCH_INTERFACE
 		usb_touchscreen_update_callback();
 		#endif
+		#ifdef FLIGHTSIM_INTERFACE
+		usb_flightsim_flush_output();
+		#endif
 	}
 }
 
@@ -405,6 +410,9 @@ static void endpoint0_setup(uint64_t setupdata)
 		#if defined(MOUSE_INTERFACE)
 		usb_mouse_configure();
 		#endif
+		#if defined(FLIGHTSIM_INTERFACE)
+		usb_flightsim_configure();
+		#endif
 		#if defined(JOYSTICK_INTERFACE)
 		usb_joystick_configure();
 		#endif
@@ -413,6 +421,9 @@ static void endpoint0_setup(uint64_t setupdata)
 		#endif
 		#if defined(MIDI_INTERFACE)
 		usb_midi_configure();
+		#endif
+		#if defined(AUDIO_INTERFACE)
+		usb_audio_configure();
 		#endif
 		endpoint0_receive(NULL, 0, 0);
 		return;
@@ -519,6 +530,66 @@ static void endpoint0_setup(uint64_t setupdata)
 		}
 		break;
 #endif
+#if defined(AUDIO_INTERFACE)
+	  case 0x0B01: // SET_INTERFACE (alternate setting)
+		if (setup.wIndex == AUDIO_INTERFACE+1) {
+			usb_audio_transmit_setting = setup.wValue;
+			if (usb_audio_transmit_setting > 0) {
+				// TODO: set up AUDIO_TX_ENDPOINT to transmit
+			}
+			endpoint0_receive(NULL, 0, 0);
+			return;
+		} else if (setup.wIndex == AUDIO_INTERFACE+2) {
+			usb_audio_receive_setting = setup.wValue;
+			endpoint0_receive(NULL, 0, 0);
+			return;
+		}
+		break;
+	  case 0x0A81: // GET_INTERFACE (alternate setting)
+		if (setup.wIndex == AUDIO_INTERFACE+1) {
+			endpoint0_buffer[0] = usb_audio_transmit_setting;
+			endpoint0_transmit(endpoint0_buffer, 1, 0);
+			return;
+		} else if (setup.wIndex == AUDIO_INTERFACE+2) {
+			endpoint0_buffer[0] = usb_audio_receive_setting;
+			endpoint0_transmit(endpoint0_buffer, 1, 0);
+			return;
+		}
+		break;
+	  case 0x0121: // SET FEATURE
+	  case 0x0221:
+	  case 0x0321:
+	  case 0x0421:
+		//printf("set_feature, word1=%x, len=%d\n", setup.word1, setup.wLength);
+		if (setup.wLength <= sizeof(endpoint0_buffer)) {
+			endpoint0_setupdata.bothwords = setupdata;
+			endpoint0_receive(endpoint0_buffer, setup.wLength, 1);
+			return; // handle these after ACK
+		}
+		break;
+	  case 0x81A1: // GET FEATURE
+	  case 0x82A1:
+	  case 0x83A1:
+	  case 0x84A1:
+		if (setup.wLength <= sizeof(endpoint0_buffer)) {
+			uint32_t len;
+			if (usb_audio_get_feature(&setup, endpoint0_buffer, &len)) {
+				//printf("GET feature, len=%d\n", len);
+				endpoint0_transmit(endpoint0_buffer, len, 0);
+				return;
+			}
+		}
+		break;
+	  case 0x81A2: // GET_CUR (wValue=0, wIndex=interface, wLength=len)
+		if (setup.wLength >= 3) {
+			endpoint0_buffer[0] = 44100 & 255;
+			endpoint0_buffer[1] = 44100 >> 8;
+			endpoint0_buffer[2] = 0;
+			endpoint0_transmit(endpoint0_buffer, 3, 0);
+			return;
+		}
+		break;
+#endif
 	}
 	USB1_ENDPTCTRL0 = 0x000010001; // stall
 }
@@ -547,7 +618,7 @@ static void endpoint0_transmit(const void *data, uint32_t len, int notify)
 	endpoint0_transfer_ack.pointer0 = 0;
 	endpoint_queue_head[0].next = (uint32_t)&endpoint0_transfer_ack;
 	endpoint_queue_head[0].status = 0;
-	USB1_ENDPTCOMPLETE |= (1<<0) | (1<<16);
+	USB1_ENDPTCOMPLETE = (1<<0) | (1<<16);
 	USB1_ENDPTPRIME |= (1<<0);
 	endpoint0_notify_mask = (notify ? (1 << 0) : 0);
 	while (USB1_ENDPTPRIME) ;
@@ -577,7 +648,7 @@ static void endpoint0_receive(void *data, uint32_t len, int notify)
 	endpoint0_transfer_ack.pointer0 = 0;
 	endpoint_queue_head[1].next = (uint32_t)&endpoint0_transfer_ack;
 	endpoint_queue_head[1].status = 0;
-	USB1_ENDPTCOMPLETE |= (1<<0) | (1<<16);
+	USB1_ENDPTCOMPLETE = (1<<0) | (1<<16);
 	USB1_ENDPTPRIME |= (1<<16);
 	endpoint0_notify_mask = (notify ? (1 << 16) : 0);
 	while (USB1_ENDPTPRIME) ;
@@ -620,6 +691,12 @@ static void endpoint0_complete(void)
 		}
 	}
 #endif
+#ifdef KEYBOARD_INTERFACE
+	if (setup.word1 == 0x02000921 && setup.word2 == ((1 << 16) | KEYBOARD_INTERFACE)) {
+		keyboard_leds = endpoint0_buffer[0];
+		endpoint0_transmit(NULL, 0, 0);
+	}
+#endif
 #ifdef SEREMU_INTERFACE
 	if (setup.word1 == 0x03000921 && setup.word2 == ((4<<16)|SEREMU_INTERFACE)
 	  && endpoint0_buffer[0] == 0xA9 && endpoint0_buffer[1] == 0x45
@@ -627,6 +704,12 @@ static void endpoint0_complete(void)
 		printf("seremu reboot request\n");
 		usb_start_sof_interrupts(NUM_INTERFACE);
 		usb_reboot_timer = 80; // TODO: 10 if only 12 Mbit/sec
+	}
+#endif
+#ifdef AUDIO_INTERFACE
+	if (setup.word1 == 0x02010121 /* TODO: check setup.word2 */) {
+		usb_audio_set_feature(&endpoint0_setupdata, endpoint0_buffer);
+		// TODO: usb_audio_set_feature()
 	}
 #endif
 }
@@ -650,6 +733,24 @@ void usb_config_rx(uint32_t ep, uint32_t packet_size, int do_zlp, void (*cb)(tra
 void usb_config_tx(uint32_t ep, uint32_t packet_size, int do_zlp, void (*cb)(transfer_t *))
 {
 	uint32_t config = (packet_size << 16) | (do_zlp ? 0 : (1 << 29));
+	if (ep < 2 || ep > NUM_ENDPOINTS) return;
+	usb_endpoint_config(endpoint_queue_head + ep * 2 + 1, config, cb);
+	if (cb) endpointN_notify_mask |= (1 << (ep + 16));
+}
+
+void usb_config_rx_iso(uint32_t ep, uint32_t packet_size, int mult, void (*cb)(transfer_t *))
+{
+	if (mult < 1 || mult > 3) return;
+	uint32_t config = (packet_size << 16) | (mult << 30);
+	if (ep < 2 || ep > NUM_ENDPOINTS) return;
+	usb_endpoint_config(endpoint_queue_head + ep * 2, config, cb);
+	if (cb) endpointN_notify_mask |= (1 << ep);
+}
+
+void usb_config_tx_iso(uint32_t ep, uint32_t packet_size, int mult, void (*cb)(transfer_t *))
+{
+	if (mult < 1 || mult > 3) return;
+	uint32_t config = (packet_size << 16) | (mult << 30);
 	if (ep < 2 || ep > NUM_ENDPOINTS) return;
 	usb_endpoint_config(endpoint_queue_head + ep * 2 + 1, config, cb);
 	if (cb) endpointN_notify_mask |= (1 << (ep + 16));

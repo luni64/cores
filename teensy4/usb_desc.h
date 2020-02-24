@@ -552,26 +552,24 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define PRODUCT_NAME		{'T','e','e','n','s','y',' ','F','l','i','g','h','t',' ','S','i','m',' ','C','o','n','t','r','o','l','s'}
   #define PRODUCT_NAME_LEN	26
   #define EP0_SIZE		64
-  #define NUM_ENDPOINTS         4
+  #define NUM_ENDPOINTS         3
   #define NUM_INTERFACE		2
   #define FLIGHTSIM_INTERFACE	0	// Flight Sim Control
   #define FLIGHTSIM_TX_ENDPOINT	3
   #define FLIGHTSIM_TX_SIZE	64
   #define FLIGHTSIM_TX_INTERVAL	1
-  #define FLIGHTSIM_RX_ENDPOINT	4
+  #define FLIGHTSIM_RX_ENDPOINT	3
   #define FLIGHTSIM_RX_SIZE	64
   #define FLIGHTSIM_RX_INTERVAL	1
   #define SEREMU_INTERFACE      1	// Serial emulation
-  #define SEREMU_TX_ENDPOINT    1
+  #define SEREMU_TX_ENDPOINT    2
   #define SEREMU_TX_SIZE        64
   #define SEREMU_TX_INTERVAL    1
   #define SEREMU_RX_ENDPOINT    2
   #define SEREMU_RX_SIZE        32
   #define SEREMU_RX_INTERVAL    2
-  #define ENDPOINT1_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT3_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT4_CONFIG	ENDPOINT_RECEIVE_ONLY
+  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_INTERRUPT + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_BULK
 
 #elif defined(USB_FLIGHTSIM_JOYSTICK)
   #define VENDOR_ID		0x16C0
@@ -582,32 +580,29 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define PRODUCT_NAME		{'T','e','e','n','s','y',' ','F','l','i','g','h','t',' ','S','i','m',' ','C','o','n','t','r','o','l','s'}
   #define PRODUCT_NAME_LEN	26
   #define EP0_SIZE		64
-  #define NUM_ENDPOINTS         5
+  #define NUM_ENDPOINTS         4
   #define NUM_INTERFACE		3
   #define FLIGHTSIM_INTERFACE	0	// Flight Sim Control
   #define FLIGHTSIM_TX_ENDPOINT	3
   #define FLIGHTSIM_TX_SIZE	64
   #define FLIGHTSIM_TX_INTERVAL	1
-  #define FLIGHTSIM_RX_ENDPOINT	4
+  #define FLIGHTSIM_RX_ENDPOINT	3
   #define FLIGHTSIM_RX_SIZE	64
   #define FLIGHTSIM_RX_INTERVAL	1
   #define SEREMU_INTERFACE      1	// Serial emulation
-  #define SEREMU_TX_ENDPOINT    1
+  #define SEREMU_TX_ENDPOINT    2
   #define SEREMU_TX_SIZE        64
   #define SEREMU_TX_INTERVAL    1
   #define SEREMU_RX_ENDPOINT    2
   #define SEREMU_RX_SIZE        32
   #define SEREMU_RX_INTERVAL    2
   #define JOYSTICK_INTERFACE    2	// Joystick
-  #define JOYSTICK_ENDPOINT     5
+  #define JOYSTICK_ENDPOINT     4
   #define JOYSTICK_SIZE         12	//  12 = normal, 64 = extreme joystick
   #define JOYSTICK_INTERVAL     1
-  #define ENDPOINT1_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT3_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT4_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT5_CONFIG	ENDPOINT_TRANSMIT_ONLY
-
+  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_INTERRUPT + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_BULK
+  #define ENDPOINT4_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_INTERRUPT
 
 #elif defined(USB_MTPDISK)
   #define VENDOR_ID		0x16C0
@@ -647,10 +642,10 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define PRODUCT_NAME		{'T','e','e','n','s','y',' ','A','u','d','i','o'}
   #define PRODUCT_NAME_LEN	12
   #define EP0_SIZE		64
-  #define NUM_ENDPOINTS         5
+  #define NUM_ENDPOINTS         4
   #define NUM_INTERFACE		4
   #define SEREMU_INTERFACE      0	// Serial emulation
-  #define SEREMU_TX_ENDPOINT    1
+  #define SEREMU_TX_ENDPOINT    2
   #define SEREMU_TX_SIZE        64
   #define SEREMU_TX_INTERVAL    1
   #define SEREMU_RX_ENDPOINT    2
@@ -659,14 +654,12 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define AUDIO_INTERFACE	1	// Audio (uses 3 consecutive interfaces)
   #define AUDIO_TX_ENDPOINT     3
   #define AUDIO_TX_SIZE         180
-  #define AUDIO_RX_ENDPOINT     4
+  #define AUDIO_RX_ENDPOINT     3
   #define AUDIO_RX_SIZE         180
-  #define AUDIO_SYNC_ENDPOINT	5
-  #define ENDPOINT1_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT3_CONFIG	ENDPOINT_TRANSMIT_ISOCHRONOUS
-  #define ENDPOINT4_CONFIG	ENDPOINT_RECEIVE_ISOCHRONOUS
-  #define ENDPOINT5_CONFIG	ENDPOINT_TRANSMIT_ISOCHRONOUS
+  #define AUDIO_SYNC_ENDPOINT	4
+  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_INTERRUPT + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_ISOCHRONOUS + ENDPOINT_TRANSMIT_ISOCHRONOUS
+  #define ENDPOINT4_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_ISOCHRONOUS
 
 #elif defined(USB_MIDI_AUDIO_SERIAL)
   #define VENDOR_ID		0x16C0
@@ -676,37 +669,38 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define PRODUCT_NAME		{'T','e','e','n','s','y',' ','M','I','D','I','/','A','u','d','i','o'}
   #define PRODUCT_NAME_LEN	17
   #define EP0_SIZE		64
-  #define NUM_ENDPOINTS         8
+  #define NUM_ENDPOINTS         6
   #define NUM_INTERFACE		6
   #define CDC_IAD_DESCRIPTOR	1
   #define CDC_STATUS_INTERFACE	0
   #define CDC_DATA_INTERFACE	1	// Serial
-  #define CDC_ACM_ENDPOINT	1
-  #define CDC_RX_ENDPOINT       2
+  #define CDC_ACM_ENDPOINT	2
+  #define CDC_RX_ENDPOINT       3
   #define CDC_TX_ENDPOINT       3
   #define CDC_ACM_SIZE          16
-  #define CDC_RX_SIZE           64
-  #define CDC_TX_SIZE           64
-  #define MIDI_INTERFACE        2	// MIDI
+  #define CDC_RX_SIZE_480       512
+  #define CDC_TX_SIZE_480       512
+  #define CDC_RX_SIZE_12        64
+  #define CDC_TX_SIZE_12        64
+  #define MIDI_INTERFACE        1	// MIDI
   #define MIDI_NUM_CABLES       1
   #define MIDI_TX_ENDPOINT      4
-  #define MIDI_TX_SIZE          64
-  #define MIDI_RX_ENDPOINT      5
-  #define MIDI_RX_SIZE          64
-  #define AUDIO_INTERFACE	3	// Audio (uses 3 consecutive interfaces)
-  #define AUDIO_TX_ENDPOINT     6
+  #define MIDI_TX_SIZE_12       64
+  #define MIDI_TX_SIZE_480      512
+  #define MIDI_RX_ENDPOINT      4
+  #define MIDI_RX_SIZE_12       64
+  #define MIDI_RX_SIZE_480      512
+  #define AUDIO_INTERFACE	2	// Audio (uses 3 consecutive interfaces)
+  #define AUDIO_TX_ENDPOINT     5
   #define AUDIO_TX_SIZE         180
-  #define AUDIO_RX_ENDPOINT     7
+  #define AUDIO_RX_ENDPOINT     5
   #define AUDIO_RX_SIZE         180
-  #define AUDIO_SYNC_ENDPOINT	8
-  #define ENDPOINT1_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT3_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT4_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT5_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT6_CONFIG	ENDPOINT_TRANSMIT_ISOCHRONOUS
-  #define ENDPOINT7_CONFIG	ENDPOINT_RECEIVE_ISOCHRONOUS
-  #define ENDPOINT8_CONFIG	ENDPOINT_TRANSMIT_ISOCHRONOUS
+  #define AUDIO_SYNC_ENDPOINT	6
+  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_BULK
+  #define ENDPOINT4_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_BULK
+  #define ENDPOINT5_CONFIG	ENDPOINT_RECEIVE_ISOCHRONOUS + ENDPOINT_TRANSMIT_ISOCHRONOUS
+  #define ENDPOINT6_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_ISOCHRONOUS
 
 #elif defined(USB_MIDI16_AUDIO_SERIAL)
   #define VENDOR_ID		0x16C0
@@ -722,32 +716,33 @@ let me know?  http://forum.pjrc.com/forums/4-Suggestions-amp-Bug-Reports
   #define CDC_IAD_DESCRIPTOR	1
   #define CDC_STATUS_INTERFACE	0
   #define CDC_DATA_INTERFACE	1	// Serial
-  #define CDC_ACM_ENDPOINT	1
-  #define CDC_RX_ENDPOINT       2
+  #define CDC_ACM_ENDPOINT	2
+  #define CDC_RX_ENDPOINT       3
   #define CDC_TX_ENDPOINT       3
   #define CDC_ACM_SIZE          16
-  #define CDC_RX_SIZE           64
-  #define CDC_TX_SIZE           64
-  #define MIDI_INTERFACE        2	// MIDI
-  #define MIDI_NUM_CABLES       16
+  #define CDC_RX_SIZE_480       512
+  #define CDC_TX_SIZE_480       512
+  #define CDC_RX_SIZE_12        64
+  #define CDC_TX_SIZE_12        64
+  #define MIDI_INTERFACE        1	// MIDI
+  #define MIDI_NUM_CABLES       1
   #define MIDI_TX_ENDPOINT      4
-  #define MIDI_TX_SIZE          64
-  #define MIDI_RX_ENDPOINT      5
-  #define MIDI_RX_SIZE          64
-  #define AUDIO_INTERFACE	3	// Audio (uses 3 consecutive interfaces)
-  #define AUDIO_TX_ENDPOINT     6
+  #define MIDI_TX_SIZE_12       64
+  #define MIDI_TX_SIZE_480      512
+  #define MIDI_RX_ENDPOINT      4
+  #define MIDI_RX_SIZE_12       64
+  #define MIDI_RX_SIZE_480      512
+  #define AUDIO_INTERFACE	2	// Audio (uses 3 consecutive interfaces)
+  #define AUDIO_TX_ENDPOINT     5
   #define AUDIO_TX_SIZE         180
-  #define AUDIO_RX_ENDPOINT     7
+  #define AUDIO_RX_ENDPOINT     5
   #define AUDIO_RX_SIZE         180
-  #define AUDIO_SYNC_ENDPOINT	8
-  #define ENDPOINT1_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT3_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT4_CONFIG	ENDPOINT_TRANSMIT_ONLY
-  #define ENDPOINT5_CONFIG	ENDPOINT_RECEIVE_ONLY
-  #define ENDPOINT6_CONFIG	ENDPOINT_TRANSMIT_ISOCHRONOUS
-  #define ENDPOINT7_CONFIG	ENDPOINT_RECEIVE_ISOCHRONOUS
-  #define ENDPOINT8_CONFIG	ENDPOINT_TRANSMIT_ISOCHRONOUS
+  #define AUDIO_SYNC_ENDPOINT	6
+  #define ENDPOINT2_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_INTERRUPT
+  #define ENDPOINT3_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_BULK
+  #define ENDPOINT4_CONFIG	ENDPOINT_RECEIVE_BULK + ENDPOINT_TRANSMIT_BULK
+  #define ENDPOINT5_CONFIG	ENDPOINT_RECEIVE_ISOCHRONOUS + ENDPOINT_TRANSMIT_ISOCHRONOUS
+  #define ENDPOINT6_CONFIG	ENDPOINT_RECEIVE_UNUSED + ENDPOINT_TRANSMIT_ISOCHRONOUS
 
 #elif defined(USB_EVERYTHING)
   #define VENDOR_ID		0x16C0

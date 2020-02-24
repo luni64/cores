@@ -1322,7 +1322,7 @@ PROGMEM const uint8_t usb_config_descriptor_480[CONFIG_DESC_SIZE] = {
 	AUDIO_TX_ENDPOINT | 0x80,		// bEndpointAddress
 	0x09, 					// bmAttributes = isochronous, adaptive
 	LSB(AUDIO_TX_SIZE), MSB(AUDIO_TX_SIZE),	// wMaxPacketSize
-	1,			 		// bInterval, 1 = every frame
+	4,			 		// bInterval, 4 = every 8 micro-frames
 	0,					// bRefresh
 	0,					// bSynchAddress
 	// Class-Specific AS Isochronous Audio Data Endpoint Descriptor
@@ -1381,7 +1381,7 @@ PROGMEM const uint8_t usb_config_descriptor_480[CONFIG_DESC_SIZE] = {
 	AUDIO_RX_ENDPOINT,			// bEndpointAddress
 	0x05, 					// bmAttributes = isochronous, asynchronous
 	LSB(AUDIO_RX_SIZE), MSB(AUDIO_RX_SIZE),	// wMaxPacketSize
-	1,			 		// bInterval, 1 = every frame
+	4,			 		// bInterval, 4 = every 8 micro-frames
 	0,					// bRefresh
 	AUDIO_SYNC_ENDPOINT | 0x80,		// bSynchAddress
 	// Class-Specific AS Isochronous Audio Data Endpoint Descriptor
@@ -1398,9 +1398,9 @@ PROGMEM const uint8_t usb_config_descriptor_480[CONFIG_DESC_SIZE] = {
 	5, 					// bDescriptorType, 5 = ENDPOINT_DESCRIPTOR
 	AUDIO_SYNC_ENDPOINT | 0x80,		// bEndpointAddress
 	0x11, 					// bmAttributes = isochronous, feedback
-	3, 0,					// wMaxPacketSize, 3 bytes
-	1,			 		// bInterval, 1 = every frame
-	5,					// bRefresh, 5 = 32ms
+	4, 0,					// wMaxPacketSize, 4 bytes
+	4,			 		// bInterval, 4 = 4 = every 8 micro-frames
+	7,					// bRefresh,
 	0,					// bSynchAddress
 #endif
 
